@@ -2,7 +2,7 @@ package com.mosquefinder.service;
 
 import com.mosquefinder.dto.UserDto;
 import com.mosquefinder.exception.ResourceNotFoundException;
-import com.mosquefinder.model.Location;
+import com.mosquefinder.model.Locations;
 import com.mosquefinder.model.User;
 import com.mosquefinder.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -57,9 +57,9 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public User updateLocation(String userId, Location location) {
+    public User updateLocation(String userId, Locations location) {
         User user = findById(userId);
-        user.setLocation((javax.xml.stream.Location) location);
+        user.setLocation(location);
         return userRepository.save(user);
     }
 
@@ -95,10 +95,14 @@ public class UserService {
                 .name(user.getName())
                 .email(user.getEmail())
                 .verified(user.isVerified())
-                .location((Location) user.getLocation())
+                .location((Locations) user.getLocation())
                 .favoriteMosques(user.getFavoriteMosques())
                 .createdAt(user.getCreatedAt())
                 .lastLoginAt(user.getLastLoginAt())
                 .build());
+    }
+
+    public User saveUser(User user) {
+        return userRepository.save(user);
     }
 }

@@ -1,7 +1,7 @@
 package com.mosquefinder.controller;
 
+import com.mosquefinder.dto.LocationDto;
 import com.mosquefinder.dto.UserDto;
-import com.mosquefinder.model.Location;
 import com.mosquefinder.model.User;
 import com.mosquefinder.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -18,27 +18,44 @@ import java.util.Map;
 public class UserController {
     private final UserService userService;
 
+
     @GetMapping("/profile")
     public ResponseEntity<UserDto> getUserProfile(Authentication authentication) {
-        if (authentication == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Return 401 if not authenticated
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null); // Return 401 if not authenticated
         }
 
         String email = authentication.getName();
-        userService.findByEmail(email);
-        return ResponseEntity.ok().build();
+        User user = userService.findByEmail(email);
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // Return 404 if user not found
+        }
+
+        // Convert the User entity to UserDto and return
+        UserDto userDto = user.toDto();
+        return ResponseEntity.ok(userDto);
     }
 
+
     @PutMapping("/profile/location")
-    public ResponseEntity<String> updateLocation(
-            Authentication authentication,
-            @RequestBody Location location) {
+    public ResponseEntity<?> updateLocation(Authentication authentication, @RequestBody LocationDto locationDto) {
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+        }
 
         String email = authentication.getName();
         User user = userService.findByEmail(email);
-        User updatedUser = userService.updateLocation(user.getId(), location);
 
-        return ResponseEntity.ok(userService.convertToDto(updatedUser));
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        }
+
+        user.setLocation(locationDto.toEntity());
+        userService.saveUser(user);
+
+        return ResponseEntity.ok("Location updated successfully");
     }
 
     @PostMapping("/mosques/{mosqueId}/favorite")

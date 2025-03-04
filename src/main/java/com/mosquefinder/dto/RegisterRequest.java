@@ -1,6 +1,6 @@
 package com.mosquefinder.dto;
 
-import com.mosquefinder.model.Location;
+import com.mosquefinder.model.Locations;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,5 +14,5 @@ public class RegisterRequest {
     private String name;
     private String email;
     private String password;
-    private Location location;
+    private Locations location;
 }

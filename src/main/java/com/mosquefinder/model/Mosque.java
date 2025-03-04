@@ -22,7 +22,7 @@ public class Mosque {
     private String id;
     private String name;
     private String description;
-    private Location location;
+    private Locations location;
     private String contactNumber;
     private String website;
     private List<String> images = new ArrayList<>();

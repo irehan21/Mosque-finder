@@ -32,16 +32,15 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/verify-otp").permitAll()
                         .requestMatchers("/api/mosques").permitAll()
                         .requestMatchers("/api/mosques/{id}").permitAll()
-                        .requestMatchers(HttpMethod.POST,"/api/auth/sendOtp/**").permitAll()
+                        .requestMatchers(HttpMethod.POST,"api/auth/sendOtp/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
                         // Endpoints that require verification
+                        .requestMatchers("/api/users/profile/location/**").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/users/**").hasAuthority("VERIFIED_USER")
                         .requestMatchers("/api/mosques/create").hasAuthority("VERIFIED_USER")
                         .requestMatchers("/api/mosques/{id}/edit").hasAuthority("VERIFIED_USER")
                         .requestMatchers("/api/mosques/{id}/favorite").hasAuthority("VERIFIED_USER")
-
-
-
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
