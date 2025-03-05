@@ -1,5 +1,6 @@
 package com.mosquefinder.model;
 
+import com.mosquefinder.dto.MosqueDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -8,8 +9,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 @Data
@@ -24,11 +23,26 @@ public class Mosque {
     private String description;
     private Locations location;
     private String contactNumber;
-    private String website;
-    private List<String> images = new ArrayList<>();
     private Map<String, String> prayerTimes;
-    private List<String> facilities = new ArrayList<>();
     private String createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String updatedBy;
+
+    public MosqueDto toDto() {
+        return new MosqueDto(
+                this.id,
+                this.name,
+                this.description,
+                this.location != null ? this.location.toEntity() : null,
+                this.contactNumber,
+                this.prayerTimes,
+                this.createdBy,
+                this.createdAt,
+                this.updatedAt,
+                this.updatedBy
+        );
+    }
+
+
 }
