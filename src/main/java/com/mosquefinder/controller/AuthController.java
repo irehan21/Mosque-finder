@@ -1,16 +1,29 @@
 package com.mosquefinder.controller;
 
-import com.mosquefinder.dto.AuthenticationRequest;
-import com.mosquefinder.dto.AuthenticationResponse;
-import com.mosquefinder.dto.OtpVerificationRequest;
-import com.mosquefinder.dto.RegisterRequest;
+import com.mosquefinder.dto.*;
+import com.mosquefinder.exception.TokenRefreshException;
+import com.mosquefinder.model.RefreshToken;
+import com.mosquefinder.model.User;
+import com.mosquefinder.repository.UserRepository;
 import com.mosquefinder.service.AuthService;
+import com.mosquefinder.service.JwtService;
 import com.mosquefinder.service.OtpService;
+import com.mosquefinder.service.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -18,6 +31,11 @@ import java.util.Map;
 public class AuthController {
     private final AuthService authService;
     private final OtpService otpService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
+    private final UserRepository userRepository;
+
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
@@ -52,10 +70,77 @@ public class AuthController {
         }
     }
 
-
     @PostMapping("/login")
-    public ResponseEntity<AuthenticationResponse> login(@RequestBody AuthenticationRequest request) {
-        return ResponseEntity.ok(authService.authenticate(request));
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+
+        String jwt = jwtService.generateToken(userDetails);
+
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
+
+        // Find user and update lastLoginAt
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        // Create refresh token
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+
+        return ResponseEntity.ok(new LoginResponse(
+                jwt,
+                refreshToken.getToken(),
+                user.getId(),
+                user.getEmail(),
+                user.getName(),
+                roles,
+                user.isVerified()
+        ));
+    }
+
+   feature/refresh-token(rehan)
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(@RequestBody TokenRefreshRequest request) {
+        String requestRefreshToken = request.getRefreshToken();
+
+        return refreshTokenService.findByToken(requestRefreshToken)
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUserId)
+                .map(userId -> {
+                    User user = userRepository.findById(userId)
+                            .orElseThrow(() -> new TokenRefreshException("User not found for the refresh token"));
+
+                    // Create an ad-hoc UserDetails
+                    UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
+                            .username(user.getEmail())
+                            .password("") // Not needed for token generation
+                            .authorities(user.isVerified() ?
+                                    List.of(new SimpleGrantedAuthority("VERIFIED_USER")) :
+                                    List.of())
+                            .build();
+
+                    String token = jwtService.generateToken(userDetails);
+
+                    return ResponseEntity.ok(new TokenRefreshResponse(token, requestRefreshToken));
+                })
+                .orElseThrow(() -> new TokenRefreshException("Refresh token is not in database!"));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logoutUser() {
+        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        refreshTokenService.deleteByUserId(user.getId());
+        return ResponseEntity.ok().body(Map.of("message", "Log out successful"));
     }
 
 }

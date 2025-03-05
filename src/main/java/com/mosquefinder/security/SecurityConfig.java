@@ -29,7 +29,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
                         // Public endpoints
-                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/verify-otp").permitAll()
+                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/logout,","/api/auth/verify-otp").permitAll()
                         .requestMatchers("/api/mosques").permitAll()
                         .requestMatchers("/api/mosques/{id}").permitAll()
                         .requestMatchers(HttpMethod.POST,"api/auth/sendOtp/**").permitAll()
@@ -38,6 +38,7 @@ public class SecurityConfig {
                         // Endpoints that require verification
                         .requestMatchers("/mosque/api/create/**").permitAll()
                         .requestMatchers("/api/users/profile/location/**").permitAll()
+                        .requestMatchers("/api/auth/refresh/**").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/users/**").hasAuthority("VERIFIED_USER")
                         .requestMatchers("/api/mosques/create").hasAuthority("VERIFIED_USER")
                         .requestMatchers("/api/mosques/{id}/edit").hasAuthority("VERIFIED_USER")
