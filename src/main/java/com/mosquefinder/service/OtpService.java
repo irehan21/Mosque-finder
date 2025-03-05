@@ -1,65 +1,102 @@
 package com.mosquefinder.service;
 
+import com.mosquefinder.model.User;
+import com.mosquefinder.repository.UserRepository;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.security.SecureRandom;
-import java.util.concurrent.TimeUnit;
+import java.security.Key;
+import java.util.Date;
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
+@Slf4j
 public class OtpService {
+    private final EmailService emailService;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private static final long OTP_VALID_DURATION = 5 * 60 * 1000; // 5 minutes
+    private final ConcurrentHashMap<String, String> otpCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Long> otpTimestamps = new ConcurrentHashMap<>();
 
-    private final RedisTemplate<String, String> redisTemplate;
-    private static final long OTP_VALID_DURATION = 5; // 5 minutes
+    @Value("${jwt.secret}")
+    private String jwtSecret;
 
-    /**
-     * Generate a new OTP for the given mobile number
-     */
-    public String generateOtp(String mobileNumber) {
-        // Generate a random 6-digit OTP
-        String otp = generateRandomOtp(6);
+    public boolean generateAndSendOtp(String email) {
+        User user = userRepository.findByEmail(email).orElse(null);
 
-        // Save the OTP to Redis with expiration
-        String key = "OTP:" + mobileNumber;
-        redisTemplate.opsForValue().set(key, otp, OTP_VALID_DURATION, TimeUnit.MINUTES);
-
-        // TODO: In a real application, you would send this OTP via SMS
-        log.info("Generated OTP for mobile {}: {}", mobileNumber, otp);
-
-        return otp;
+        if (user == null) {
+            log.warn("User with email {} not found!", email);
+            return false;  // User does not exist
+        }
+        String otp = generateOtp();
+        otpCache.put(email, otp);
+        otpTimestamps.put(email, System.currentTimeMillis());
+        emailService.sendOtpEmail(email, otp);
+        log.info("Generated OTP for email {}: {}", email, otp);
+        return true;
     }
 
-    /**
-     * Verify the OTP for the given mobile number
-     */
-    public boolean verifyOtp(String mobileNumber, String otp) {
-        String key = "OTP:" + mobileNumber;
-        String storedOtp = redisTemplate.opsForValue().get(key);
+//    public boolean verifyOtp(String email, String otp) {
+//        String storedOtp = otpCache.get(email);
+//        if (storedOtp != null && storedOtp.equals(otp)) {
+//            otpCache.remove(email);
+//            verifyUser(email);
+//            return true;
+//        }
+//        return false;
+//    }
+
+    public boolean verifyOtp(String email, String otp) {
+        String storedOtp = otpCache.get(email);
+        Long timestamp = otpTimestamps.get(email);
 
         if (storedOtp != null && storedOtp.equals(otp)) {
-            // Delete the OTP once verified
-            redisTemplate.delete(key);
-            return true;
+            long currentTime = System.currentTimeMillis();
+            if (timestamp != null && (currentTime - timestamp) <= OTP_VALID_DURATION) {
+                otpCache.remove(email);
+                otpTimestamps.remove(email);
+                verifyUser(email);
+                return true;
+            } else {
+                otpCache.remove(email);
+                otpTimestamps.remove(email);
+            }
         }
-
         return false;
     }
 
-    /**
-     * Generate a random numeric OTP
-     */
-    private String generateRandomOtp(int length) {
-        SecureRandom random = new SecureRandom();
-        StringBuilder otp = new StringBuilder();
-
-        for (int i = 0; i < length; i++) {
-            otp.append(random.nextInt(10)); // 0-9
+    private void verifyUser(String email) {
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user != null) {
+            user.setVerified(true);
+            userRepository.save(user);
         }
+    }
 
-        return otp.toString();
+    private String generateOtp() {
+        Random random = new Random();
+        int otp = 100000 + random.nextInt(900000);
+        return String.valueOf(otp);
+    }
+
+    public String generateVerificationToken(String email) {
+        return Jwts.builder()
+                .setSubject(email)
+                .setExpiration(new Date(System.currentTimeMillis() + OTP_VALID_DURATION))
+                .signWith(getSignKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    private Key getSignKey() {
+        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
 }

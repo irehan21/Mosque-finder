@@ -1,65 +1,44 @@
 package com.mosquefinder.dto;
 
+import com.mosquefinder.model.Locations; // Ensure correct import
+import com.mosquefinder.model.User;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
-
+import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 
+@Builder
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class UserDto {
+    private String id;
+    private String name;
+    private String email;
+    private boolean verified;
+    private Locations location;
+    private LocalDateTime createdAt;
+    private LocalDateTime lastLoginAt;
+    private List<String> favoriteMosques;
+    private HashSet<String> roles;
 
-    @Data
-    public static class RegistrationRequest {
-        @NotBlank(message = "Name is required")
-        @Size(min = 2, max = 50, message = "Name must be between 2 and 50 characters")
-        private String name;
-
-        @NotBlank(message = "Mobile number is required")
-        @Pattern(regexp = "^\\+?[0-9]{10,15}$", message = "Mobile number must be between 10-15 digits")
-        private String mobileNumber;
-
-        private String email;
-
-        @NotBlank(message = "Password is required")
-        @Size(min = 6, message = "Password must be at least 6 characters")
-        private String password;
-    }
-
-    @Data
-    public static class LoginRequest {
-        @NotBlank(message = "Mobile number is required")
-        private String mobileNumber;
-
-        @NotBlank(message = "Password is required")
-        private String password;
-    }
-
-    @Data
-    public static class VerifyOtpRequest {
-        @NotBlank(message = "Mobile number is required")
-        private String mobileNumber;
-
-        @NotBlank(message = "OTP is required")
-        @Size(min = 4, max = 6, message = "OTP must be 4-6 characters")
-        private String otp;
-    }
-
-    @Data
-    public static class AuthResponse {
-        private String token;
-        private String userId;
-        private String name;
-        private String mobileNumber;
-    }
-
-    @Data
-    public static class UserProfileResponse {
-        private String id;
-        private String name;
-        private String mobileNumber;
-        private String email;
-        private List<String> favoriteMosqueIds;
+    // ✅ Fixed toEntity() to match the User constructor
+    public User toEntity() {
+        return new User(
+                this.id,
+                this.name,
+                this.email,
+                null, // Exclude password for security
+                this.verified,
+                this.location,
+                this.createdAt,
+                this.lastLoginAt,
+                this.favoriteMosques,
+                this.roles
+        );
     }
 }
