@@ -70,12 +70,6 @@ public class AuthController {
         }
     }
 
-
-//    @PostMapping("/login")
-//    public ResponseEntity<AuthenticationResponse> login(@RequestBody AuthenticationRequest request) {
-//        return ResponseEntity.ok(authService.authenticate(request));
-//    }
-
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         Authentication authentication = authenticationManager.authenticate(
@@ -111,6 +105,7 @@ public class AuthController {
         ));
     }
 
+   feature/refresh-token(rehan)
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@RequestBody TokenRefreshRequest request) {
         String requestRefreshToken = request.getRefreshToken();

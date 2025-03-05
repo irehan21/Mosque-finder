@@ -36,6 +36,7 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
                         // Endpoints that require verification
+                        .requestMatchers("/mosque/api/create/**").permitAll()
                         .requestMatchers("/api/users/profile/location/**").permitAll()
                         .requestMatchers("/api/auth/refresh/**").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/users/**").hasAuthority("VERIFIED_USER")
