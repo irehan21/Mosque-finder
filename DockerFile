@@ -1,0 +1,9 @@
+FROM eclipse-temurin:17-jdk-alpine
+WORKDIR /app
+COPY .mvn/ .mvn
+COPY mvnw pom.xml ./
+RUN ./mvnw dependency:go-offline -B
+COPY src ./src
+RUN ./mvnw package -DskipTests
+EXPOSE $PORT
+CMD ["sh", "-c", "java -jar /app/target/*.jar --server.port=$PORT"]
