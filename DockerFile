@@ -1,9 +1,7 @@
-FROM eclipse-temurin:17-jdk-alpine
-WORKDIR /app
-COPY .mvn/ .mvn
-COPY mvnw pom.xml ./
-RUN ./mvnw dependency:go-offline -B
-COPY src ./src
-RUN ./mvnw package -DskipTests
-EXPOSE $PORT
-CMD ["sh", "-c", "java -jar /app/target/*.jar --server.port=$PORT"]
+FROM maven:3.8.5-openjdk-17 AS build
+COPY . .
+RUN mvn clean package -DskipTests
+FROM maven:3.8.1-openjdk-17-slim
+COPY --from=build /target/mosque-finder0.0.1-SNAPSHOT.jar mosque-finder.jar
+EXPOSE 8080
+ENTRYPOINT [ "java", "-jar", "mosque-finder.jar"]
