@@ -105,7 +105,7 @@ public class AuthController {
         ));
     }
 
-   feature/refresh-token(rehan)
+
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@RequestBody TokenRefreshRequest request) {
         String requestRefreshToken = request.getRefreshToken();
@@ -130,7 +130,7 @@ public class AuthController {
 
                     return ResponseEntity.ok(new TokenRefreshResponse(token, requestRefreshToken));
                 })
-                .orElseThrow(() -> new TokenRefreshException("Refresh token is not in database!"));
+                .orElseThrow(() -> new TokenRefreshException("Refresh token is not valid!"));
     }
 
     @PostMapping("/logout")

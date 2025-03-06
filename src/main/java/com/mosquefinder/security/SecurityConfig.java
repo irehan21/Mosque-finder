@@ -15,6 +15,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -28,22 +33,29 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
-                        // Public endpoints
-                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/logout,","/api/auth/verify-otp").permitAll()
-                        .requestMatchers("/api/mosques").permitAll()
-                        .requestMatchers("/api/mosques/{id}").permitAll()
-                        .requestMatchers(HttpMethod.POST,"api/auth/sendOtp/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        // Public endpoints (accessible without authentication)
+                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/logout", "/api/auth/verify-otp").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/sendOtp/**").permitAll()
+                        .requestMatchers("/mosque/api/getAll/**").permitAll()
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/swagger-resources/**",
+                                "/api/auth/**"
+                        ).permitAll()
 
-                        // Endpoints that require verification
-                        .requestMatchers("/mosque/api/create/**").permitAll()
-                        .requestMatchers("/api/users/profile/location/**").permitAll()
+
+                        // Protected endpoints (Require authentication)
+                        .requestMatchers("/mosque/api/create/**").hasAuthority("VERIFIED_USER")
+                        .requestMatchers("/api/users/profile/location/**").hasAuthority("VERIFIED_USER")
                         .requestMatchers("/api/auth/refresh/**").permitAll()
-                        .requestMatchers(HttpMethod.GET,"/api/users/**").hasAuthority("VERIFIED_USER")
+                        .requestMatchers(HttpMethod.GET, "/api/users/**").hasAuthority("VERIFIED_USER")
                         .requestMatchers("/api/mosques/create").hasAuthority("VERIFIED_USER")
                         .requestMatchers("/api/mosques/{id}/edit").hasAuthority("VERIFIED_USER")
                         .requestMatchers("/api/mosques/{id}/favorite").hasAuthority("VERIFIED_USER")
-                        // All other endpoints require authentication
+
+                        // Require authentication for all other endpoints
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
@@ -51,6 +63,7 @@ public class SecurityConfig {
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
 
         return http.build();
     }
@@ -72,4 +85,16 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
+//
+//    @Bean
+//    public CorsConfigurationSource corsConfigurationSource() {
+//        CorsConfiguration configuration = new CorsConfiguration();
+//        configuration.setAllowedOrigins(List.of("*")); // Allow all origins
+//        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+//        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+//
+//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+//        source.registerCorsConfiguration("/**", configuration);
+//        return source;
+//    }
 }
