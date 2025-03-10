@@ -10,6 +10,7 @@ import com.mosquefinder.service.JwtService;
 import com.mosquefinder.service.OtpService;
 import com.mosquefinder.service.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -70,39 +71,24 @@ public class AuthController {
         }
     }
 
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+        // Authenticate user
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
         );
 
+        // Set security context
         SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        // Get user details from authentication
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
-        String jwt = jwtService.generateToken(userDetails);
+        // Delegate to service for business logic
+        LoginResponse loginResponse = authService.handleSuccessfulLogin(userDetails);
 
-        List<String> roles = userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
-
-        // Find user and update lastLoginAt
-        User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        user.setLastLoginAt(LocalDateTime.now());
-        userRepository.save(user);
-
-        // Create refresh token
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
-
-        return ResponseEntity.ok(new LoginResponse(
-                jwt,
-                refreshToken.getToken(),
-                user.getId(),
-                user.getEmail(),
-                user.getName(),
-                roles,
-                user.isVerified()
-        ));
+        return ResponseEntity.ok(loginResponse);
     }
 
 
@@ -110,36 +96,18 @@ public class AuthController {
     public ResponseEntity<?> refreshToken(@RequestBody TokenRefreshRequest request) {
         String requestRefreshToken = request.getRefreshToken();
 
-        return refreshTokenService.findByToken(requestRefreshToken)
-                .map(refreshTokenService::verifyExpiration)
-                .map(RefreshToken::getUserId)
-                .map(userId -> {
-                    User user = userRepository.findById(userId)
-                            .orElseThrow(() -> new TokenRefreshException("User not found for the refresh token"));
-
-                    // Create an ad-hoc UserDetails
-                    UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
-                            .username(user.getEmail())
-                            .password("") // Not needed for token generation
-                            .authorities(user.isVerified() ?
-                                    List.of(new SimpleGrantedAuthority("VERIFIED_USER")) :
-                                    List.of())
-                            .build();
-
-                    String token = jwtService.generateToken(userDetails);
-
-                    return ResponseEntity.ok(new TokenRefreshResponse(token, requestRefreshToken));
-                })
-                .orElseThrow(() -> new TokenRefreshException("Refresh token is not valid!"));
+        try {
+            TokenRefreshResponse refreshResponse = authService.refreshToken(requestRefreshToken);
+            return ResponseEntity.ok(refreshResponse);
+        } catch (TokenRefreshException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
     }
 
     @PostMapping("/logout")
     public ResponseEntity<?> logoutUser() {
         UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        refreshTokenService.deleteByUserId(user.getId());
+        authService.logout(userDetails);
         return ResponseEntity.ok().body(Map.of("message", "Log out successful"));
     }
 

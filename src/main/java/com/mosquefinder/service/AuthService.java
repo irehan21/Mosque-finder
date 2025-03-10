@@ -1,17 +1,26 @@
 package com.mosquefinder.service;
 
-import com.mosquefinder.dto.AuthenticationRequest;
-import com.mosquefinder.dto.AuthenticationResponse;
-import com.mosquefinder.dto.RegisterRequest;
+import com.mosquefinder.dto.*;
+import com.mosquefinder.exception.TokenRefreshException;
+import com.mosquefinder.model.RefreshToken;
 import com.mosquefinder.model.User;
+import com.mosquefinder.repository.RefreshTokenRepository;
 import com.mosquefinder.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.token.TokenService;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -19,9 +28,9 @@ public class AuthService {
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final AuthenticationManager authenticationManager;
     private final OtpService otpService;
     private final UserRepository userRepository;
+    private final RefreshTokenService refreshTokenService;
 
     public void register(RegisterRequest request) {
         // Check if user already exists
@@ -47,36 +56,97 @@ public class AuthService {
         return isValid;
     }
 
+    public LoginResponse handleSuccessfulLogin(UserDetails userDetails) {
+        // Generate JWT token
+        String jwt = jwtService.generateToken(userDetails);
 
-    public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        // Fetch user from DB to get latest 'verified' status
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        // Extract roles
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
 
-        // Check password
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new BadCredentialsException("Invalid credential");
-        }
+        // Find user and update last login time
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (!user.isVerified()) {
-            throw new BadCredentialsException("User is not verified");
-        }
+        user.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(user);
 
-        // ✅ Ensure fetching the latest user data before generating JWT
-        String jwtToken = jwtService.generateToken(
-                org.springframework.security.core.userdetails.User
-                        .withUsername(user.getEmail())
-                        .password(user.getPassword())
-                        .authorities(user.isVerified() ? "VERIFIED_USER" : "UNVERIFIED_USER")
-                        .build()
+        // Create refresh token
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+
+        // Create and return response
+        return new LoginResponse(
+                jwt,
+                refreshToken.getToken(),
+                user.getId(),
+                user.getEmail(),
+                user.getName(),
+                roles,
+                user.isVerified()
         );
-
-        return AuthenticationResponse.builder()
-                .token(jwtToken)
-                .verified(user.isVerified())
-                .userId(userService.convertToDto(user))
-                .build();
-
     }
+
+    public void logout(UserDetails userDetails) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        refreshTokenService.deleteByUserId(user.getId());
+    }
+
+    public TokenRefreshResponse refreshToken(String refreshToken) {
+        return refreshTokenService.findByToken(refreshToken)
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUserId)
+                .map(userId -> {
+                    User user = userRepository.findById(userId)
+                            .orElseThrow(() -> new TokenRefreshException("User not found for the refresh token"));
+
+                    // Create an ad-hoc UserDetails
+                    UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
+                            .username(user.getEmail())
+                            .password("") // Not needed for token generation
+                            .authorities(user.isVerified() ?
+                                    List.of(new SimpleGrantedAuthority("VERIFIED_USER")) :
+                                    List.of())
+                            .build();
+
+                    String token = jwtService.generateToken(userDetails);
+
+                    return new TokenRefreshResponse(token, refreshToken);
+                })
+                .orElseThrow(() -> new TokenRefreshException("Refresh token is not valid!"));
+    }
+
+//    public AuthenticationResponse authenticate(AuthenticationRequest request) {
+//        // Fetch user from DB to get latest 'verified' status
+//        User user = userRepository.findByEmail(request.getEmail())
+//                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+//
+//        // Check password
+//        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+//            throw new BadCredentialsException("Invalid credential");
+//        }
+//
+//        if (!user.isVerified()) {
+//            throw new BadCredentialsException("User is not verified");
+//        }
+//
+//        // ✅ Ensure fetching the latest user data before generating JWT
+//        String jwtToken = jwtService.generateToken(
+//                org.springframework.security.core.userdetails.User
+//                        .withUsername(user.getEmail())
+//                        .password(user.getPassword())
+//                        .authorities(user.isVerified() ? "VERIFIED_USER" : "UNVERIFIED_USER")
+//                        .build()
+//        );
+//
+//        return AuthenticationResponse.builder()
+//                .token(jwtToken)
+//                .verified(user.isVerified())
+//                .userId(userService.convertToDto(user))
+//                .build();
+//
+//    }
 
 }
