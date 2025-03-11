@@ -2,17 +2,9 @@ package com.mosquefinder.service;
 
 import com.mosquefinder.model.User;
 import com.mosquefinder.repository.UserRepository;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.security.Key;
-import java.util.Date;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -22,13 +14,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class OtpService {
     private final EmailService emailService;
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private static final long OTP_VALID_DURATION = 5 * 60 * 1000; // 5 minutes
     private final ConcurrentHashMap<String, String> otpCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Long> otpTimestamps = new ConcurrentHashMap<>();
-
-    @Value("${jwt.secret}")
-    private String jwtSecret;
 
     public boolean generateAndSendOtp(String email) {
         User user = userRepository.findByEmail(email).orElse(null);
@@ -45,15 +33,6 @@ public class OtpService {
         return true;
     }
 
-//    public boolean verifyOtp(String email, String otp) {
-//        String storedOtp = otpCache.get(email);
-//        if (storedOtp != null && storedOtp.equals(otp)) {
-//            otpCache.remove(email);
-//            verifyUser(email);
-//            return true;
-//        }
-//        return false;
-//    }
 
     public boolean verifyOtp(String email, String otp) {
         String storedOtp = otpCache.get(email);
@@ -88,15 +67,4 @@ public class OtpService {
         return String.valueOf(otp);
     }
 
-    public String generateVerificationToken(String email) {
-        return Jwts.builder()
-                .setSubject(email)
-                .setExpiration(new Date(System.currentTimeMillis() + OTP_VALID_DURATION))
-                .signWith(getSignKey(), SignatureAlgorithm.HS256)
-                .compact();
-    }
-
-    private Key getSignKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
-    }
 }

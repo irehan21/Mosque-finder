@@ -4,17 +4,11 @@ import com.mosquefinder.dto.*;
 import com.mosquefinder.exception.TokenRefreshException;
 import com.mosquefinder.model.RefreshToken;
 import com.mosquefinder.model.User;
-import com.mosquefinder.repository.RefreshTokenRepository;
 import com.mosquefinder.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.token.TokenService;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -118,35 +112,5 @@ public class AuthService {
                 .orElseThrow(() -> new TokenRefreshException("Refresh token is not valid!"));
     }
 
-//    public AuthenticationResponse authenticate(AuthenticationRequest request) {
-//        // Fetch user from DB to get latest 'verified' status
-//        User user = userRepository.findByEmail(request.getEmail())
-//                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-//
-//        // Check password
-//        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-//            throw new BadCredentialsException("Invalid credential");
-//        }
-//
-//        if (!user.isVerified()) {
-//            throw new BadCredentialsException("User is not verified");
-//        }
-//
-//        // ✅ Ensure fetching the latest user data before generating JWT
-//        String jwtToken = jwtService.generateToken(
-//                org.springframework.security.core.userdetails.User
-//                        .withUsername(user.getEmail())
-//                        .password(user.getPassword())
-//                        .authorities(user.isVerified() ? "VERIFIED_USER" : "UNVERIFIED_USER")
-//                        .build()
-//        );
-//
-//        return AuthenticationResponse.builder()
-//                .token(jwtToken)
-//                .verified(user.isVerified())
-//                .userId(userService.convertToDto(user))
-//                .build();
-//
-//    }
 
 }

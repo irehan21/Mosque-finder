@@ -28,7 +28,7 @@ public class MosqueController {
     }
 
     @GetMapping("/getAll")
-    public ResponseEntity<List<MosqueDto>> getAllMosque(Authentication authentication) {
+    public ResponseEntity<List<MosqueDto>> getAllMosque() {
         return ResponseEntity.ok(mosqueService.getAllMosques());
     }
 
@@ -39,7 +39,6 @@ public class MosqueController {
 
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deleteMosque(@PathVariable String id, Authentication authentication) {
-        String deletedBy = authentication.getName(); // Get the logged-in user's name (email or username)
         mosqueService.deleteMosque(id,authentication);
         return ResponseEntity.ok("Mosque deleted successfully");
     }

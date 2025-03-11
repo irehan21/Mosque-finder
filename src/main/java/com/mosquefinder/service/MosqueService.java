@@ -3,7 +3,6 @@ package com.mosquefinder.service;
 import com.mosquefinder.dto.MosqueDto;
 import com.mosquefinder.model.Mosque;
 import com.mosquefinder.repository.MosqueRepository;
-import com.mosquefinder.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -18,7 +17,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MosqueService {
     private final MosqueRepository mosqueRepository;
-    private final UserRepository userRepository;
 
     public List<MosqueDto> getAllMosques() {
         List<Mosque> mosques = mosqueRepository.findAll();

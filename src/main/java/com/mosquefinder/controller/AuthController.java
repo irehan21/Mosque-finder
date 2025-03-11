@@ -2,29 +2,19 @@ package com.mosquefinder.controller;
 
 import com.mosquefinder.dto.*;
 import com.mosquefinder.exception.TokenRefreshException;
-import com.mosquefinder.model.RefreshToken;
-import com.mosquefinder.model.User;
-import com.mosquefinder.repository.UserRepository;
 import com.mosquefinder.service.AuthService;
-import com.mosquefinder.service.JwtService;
 import com.mosquefinder.service.OtpService;
-import com.mosquefinder.service.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -33,9 +23,6 @@ public class AuthController {
     private final AuthService authService;
     private final OtpService otpService;
     private final AuthenticationManager authenticationManager;
-    private final JwtService jwtService;
-    private final RefreshTokenService refreshTokenService;
-    private final UserRepository userRepository;
 
 
     @PostMapping("/register")

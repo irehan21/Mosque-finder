@@ -1,8 +1,7 @@
 package com.mosquefinder.service;
 
-import com.mosquefinder.dto.UserDto;
+import com.mosquefinder.dto.LocationDto;
 import com.mosquefinder.exception.ResourceNotFoundException;
-import com.mosquefinder.model.Locations;
 import com.mosquefinder.model.User;
 import com.mosquefinder.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -44,65 +43,48 @@ public class UserService {
         return userRepository.existsByEmail(email);
     }
 
-    public User verifyUser(String email) {
+    public void verifyUser(String email) {
         User user = findByEmail(email);
         user.setVerified(true);
-        return userRepository.save(user);
+        userRepository.save(user);
     }
 
-
-    public User updateLoginTime(String email) {
+    public void updateLocation(String email, LocationDto locationDto) {
         User user = findByEmail(email);
-        user.setLastLoginAt(LocalDateTime.now());
-        return userRepository.save(user);
+
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
+
+        user.setLocation(locationDto.toEntity());
+        saveUser(user);
     }
 
-    public User updateLocation(String userId, Locations location) {
-        User user = findById(userId);
-        user.setLocation(location);
-        return userRepository.save(user);
-    }
-
-    public User addFavoriteMosque(String userId, String mosqueId) {
+    public void addFavoriteMosque(String userId, String mosqueId) {
         User user = findById(userId);
         List<String> favorites = user.getFavoriteMosques();
 
         if (!favorites.contains(mosqueId)) {
             favorites.add(mosqueId);
             user.setFavoriteMosques(favorites);
-            return userRepository.save(user);
+            userRepository.save(user);
         }
 
-        return user;
     }
 
-    public User removeFavoriteMosque(String userId, String mosqueId) {
+    public void removeFavoriteMosque(String userId, String mosqueId) {
         User user = findById(userId);
         List<String> favorites = user.getFavoriteMosques();
 
         if (favorites.contains(mosqueId)) {
             favorites.remove(mosqueId);
             user.setFavoriteMosques(favorites);
-            return userRepository.save(user);
+            userRepository.save(user);
         }
 
-        return user;
     }
 
-    public String convertToDto(User user) {
-        return String.valueOf(UserDto.builder()
-                .id(user.getId())
-                .name(user.getName())
-                .email(user.getEmail())
-                .verified(user.isVerified())
-                .location((Locations) user.getLocation())
-                .favoriteMosques(user.getFavoriteMosques())
-                .createdAt(user.getCreatedAt())
-                .lastLoginAt(user.getLastLoginAt())
-                .build());
-    }
-
-    public User saveUser(User user) {
-        return userRepository.save(user);
+    public void saveUser(User user) {
+        userRepository.save(user);
     }
 }

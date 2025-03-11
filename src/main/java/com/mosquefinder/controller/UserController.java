@@ -9,7 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.Map;
 
 @RestController
@@ -40,22 +39,18 @@ public class UserController {
 
     @PutMapping("/profile/location")
     public ResponseEntity<?> updateLocation(Authentication authentication, @RequestBody LocationDto locationDto) {
-
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
         }
 
-        String email = authentication.getName();
-        User user = userService.findByEmail(email);
-
-        if (user == null) {
+        try {
+            userService.updateLocation(authentication.getName(), locationDto);
+            return ResponseEntity.ok("Location updated successfully");
+        } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error updating location");
         }
-
-        user.setLocation(locationDto.toEntity());
-        userService.saveUser(user);
-
-        return ResponseEntity.ok("Location updated successfully");
     }
 
     @PostMapping("/mosques/{mosqueId}/favorite")

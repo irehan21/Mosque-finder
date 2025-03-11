@@ -2,7 +2,6 @@ package com.mosquefinder.dto;
 
 import com.mosquefinder.model.Locations;
 import com.mosquefinder.model.Mosque;
-import com.mosquefinder.model.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,21 +24,6 @@ public class MosqueDto {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String updatedBy;
-
-    public Mosque toEntity() {
-        return new Mosque(
-                this.id,
-                this.name,
-                this.description,
-                this.location,
-                this.contactNumber,
-                this.prayerTimes,
-                this.createdBy,
-                this.createdAt,
-                this.updatedAt,
-                this.updatedBy
-        );
-    }
 
     public static MosqueDto fromEntity(Mosque mosque) {
         return MosqueDto.builder()

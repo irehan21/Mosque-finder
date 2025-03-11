@@ -26,19 +26,4 @@ public class UserDto {
     private List<String> favoriteMosques;
     private HashSet<String> roles;
 
-    // ✅ Fixed toEntity() to match the User constructor
-    public User toEntity() {
-        return new User(
-                this.id,
-                this.name,
-                this.email,
-                null, // Exclude password for security
-                this.verified,
-                this.location,
-                this.createdAt,
-                this.lastLoginAt,
-                this.favoriteMosques,
-                this.roles
-        );
-    }
 }

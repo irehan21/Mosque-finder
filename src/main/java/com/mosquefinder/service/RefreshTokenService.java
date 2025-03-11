@@ -4,7 +4,6 @@ package com.mosquefinder.service;
 import com.mosquefinder.exception.TokenRefreshException;
 import com.mosquefinder.model.RefreshToken;
 import com.mosquefinder.repository.RefreshTokenRepository;
-import com.mosquefinder.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -21,13 +20,6 @@ public class RefreshTokenService {
     private Long refreshTokenDurationMs;
 
     private final RefreshTokenRepository refreshTokenRepository;
-    private final UserRepository userRepository;
-    private JwtService jwtService;
-
-//    public RefreshTokenService(RefreshTokenRepository refreshTokenRepository, UserRepository userRepository) {
-//        this.refreshTokenRepository = refreshTokenRepository;
-//        this.userRepository = userRepository;
-//    }
 
     public Optional<RefreshToken> findByToken(String token) {
         return refreshTokenRepository.findByToken(token);
