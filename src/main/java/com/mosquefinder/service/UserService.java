@@ -26,7 +26,7 @@ public class UserService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        return userRepository.save(user);
+        return saveUser(user);
     }
 
     public User findByEmail(String email) {
@@ -46,7 +46,7 @@ public class UserService {
     public void verifyUser(String email) {
         User user = findByEmail(email);
         user.setVerified(true);
-        userRepository.save(user);
+        saveUser(user);
     }
 
     public void updateLocation(String email, LocationDto locationDto) {
@@ -67,8 +67,7 @@ public class UserService {
         if (!favorites.contains(mosqueId)) {
             favorites.add(mosqueId);
             user.setFavoriteMosques(favorites);
-            userRepository.save(user);
-        }
+            saveUser(user);        }
 
     }
 
@@ -79,12 +78,12 @@ public class UserService {
         if (favorites.contains(mosqueId)) {
             favorites.remove(mosqueId);
             user.setFavoriteMosques(favorites);
-            userRepository.save(user);
+            saveUser(user);
         }
 
     }
 
-    public void saveUser(User user) {
-        userRepository.save(user);
+    public User saveUser(User user) {
+       return userRepository.save(user);
     }
 }
