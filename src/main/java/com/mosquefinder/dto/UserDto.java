@@ -10,9 +10,10 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-@Builder
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserDto {
@@ -24,6 +25,25 @@ public class UserDto {
     private LocalDateTime createdAt;
     private LocalDateTime lastLoginAt;
     private List<String> favoriteMosques;
-    private HashSet<String> roles;
+//    private HashSet<String> roles;
+    private String roles;
+
+
+//    public User toEntity() {
+//        return new User(
+//                this.id,
+//                this.name,
+//                this.email,
+//                this.verified,
+//                this.location != null ? this.location.toEntity() : null, // Ensure Location has a toDto() method
+//                this.createdAt,
+//                this.lastLoginAt,
+//                this.favoriteMosques,
+////                (HashSet<String>) this.roles
+//                this.roles
+//        );
+//    }
+
+
 
 }

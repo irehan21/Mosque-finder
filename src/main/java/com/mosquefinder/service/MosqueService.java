@@ -1,9 +1,18 @@
 package com.mosquefinder.service;
 
 import com.mosquefinder.dto.MosqueDto;
+import com.mosquefinder.dto.MosqueWithDistanceDto;
 import com.mosquefinder.model.Mosque;
 import com.mosquefinder.repository.MosqueRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.geo.Distance;
+import org.springframework.data.geo.Metrics;
+import org.springframework.data.geo.Point;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.GeoNearOperation;
+import org.springframework.data.mongodb.core.query.NearQuery;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,6 +26,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MosqueService {
     private final MosqueRepository mosqueRepository;
+    private final MongoTemplate mongoTemplate;
 
     public List<MosqueDto> getAllMosques() {
         List<Mosque> mosques = mosqueRepository.findAll();
@@ -27,7 +37,7 @@ public class MosqueService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         // Check if the user has ADMIN role
-        boolean isAdmin = authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        boolean isAdmin = authentication.getAuthorities().contains(new SimpleGrantedAuthority("ADMIN"));
 
         if (!isAdmin) {
             throw new RuntimeException("Unauthorized! Only ADMIN can create or edit mosques.");
@@ -47,12 +57,10 @@ public class MosqueService {
             return mosqueRepository.save(newMosque);
         }
 
-
-
     }
 
     public Mosque updateMosque(String id, MosqueDto mosqueDto,  Authentication authentication , String updatedBy) {
-        boolean isAdmin = authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        boolean isAdmin = authentication.getAuthorities().contains(new SimpleGrantedAuthority("ADMIN"));
 
         if (!isAdmin) {
             throw new RuntimeException("Unauthorized! Only ADMIN can update mosques.");
@@ -82,7 +90,7 @@ public class MosqueService {
 
 
     public void deleteMosque(String mosqueId, Authentication authentication) {
-        boolean isAdmin = authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        boolean isAdmin = authentication.getAuthorities().contains(new SimpleGrantedAuthority("ADMIN"));
 
         if (!isAdmin) {
             throw new RuntimeException("Unauthorized! Only ADMIN can delete mosques.");
@@ -95,4 +103,30 @@ public class MosqueService {
 
     }
 
+    public List<MosqueWithDistanceDto> findMosquesNear(double latitude, double longitude, double distanceInKilometers) {
+        Point point = new Point(longitude, latitude);
+        Distance distance = new Distance(distanceInKilometers, Metrics.KILOMETERS);
+
+        NearQuery nearQuery = NearQuery.near(point)
+                .maxDistance(distance)
+                .in(Metrics.KILOMETERS)
+                .spherical(true);
+
+        // GeoNear aggregation to calculate distance
+        GeoNearOperation geoNearOperation = Aggregation.geoNear(nearQuery, "distance");
+
+        // Build aggregation pipeline
+        Aggregation aggregation = Aggregation.newAggregation(
+                geoNearOperation,
+                Aggregation.project("id", "name", "description", "location", "contactNumber")
+                        .and("distance").as("distance"),
+                Aggregation.sort(org.springframework.data.domain.Sort.Direction.ASC, "distance") // Sort nearest first
+        );
+
+        // Execute aggregation and map results
+        AggregationResults<MosqueWithDistanceDto> results = mongoTemplate.aggregate(aggregation, "mosques", MosqueWithDistanceDto.class);
+        return results.getMappedResults();
+    }
 }
+
+

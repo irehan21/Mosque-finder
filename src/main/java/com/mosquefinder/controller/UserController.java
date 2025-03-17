@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import javax.management.relation.Role;
 import java.util.Map;
 
 @RestController
@@ -79,5 +81,12 @@ public class UserController {
         return ResponseEntity.ok(Map.of(
                 "message", "Mosque removed from favorites"
         ));
+    }
+
+    @PostMapping("/updateRole")
+    public ResponseEntity<?> updateRole(@RequestBody UserDto userDto,  Authentication authentication){
+        userService.updateRole(authentication, userDto);
+        return ResponseEntity.ok("Role updated successfully");
+
     }
 }

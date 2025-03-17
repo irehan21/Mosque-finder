@@ -27,7 +27,8 @@ public class User {
     private LocalDateTime createdAt;
     private LocalDateTime lastLoginAt;
     private List<String> favoriteMosques = new ArrayList<>();
-    private Set<String> roles = new HashSet<>();
+    private String roles;
+
 
 
     public UserDto toDto() {
@@ -36,13 +37,17 @@ public class User {
                 this.name,
                 this.email,
                 this.verified,
-                this.location != null ? this.location.toEntity() : null, // Ensure Location has a toDto() method
+                this.location != null ? this.location.toEntity() : null,
                 this.createdAt,
                 this.lastLoginAt,
                 this.favoriteMosques,
-                (HashSet<String>) this.roles
+                this.roles
         );
     }
+
+
+
+
 
 
 }

@@ -24,8 +24,11 @@ public class CustomUserDetailsService implements UserDetailsService {
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
 
         // Add role-based authorities
-        user.getRoles().forEach(role ->
-                authorities.add(new SimpleGrantedAuthority(role)));
+//        user.getRoles().forEach(role ->
+//        authorities.add(new SimpleGrantedAuthority(role)));
+        // If role is stored as a single String
+
+        authorities.add(new SimpleGrantedAuthority(user.getRoles()));
 
         // Add verified status as an authority
         if (user.isVerified()) {

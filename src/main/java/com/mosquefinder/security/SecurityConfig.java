@@ -37,13 +37,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/logout", "/api/auth/verify-otp").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/sendOtp/**").permitAll()
                         .requestMatchers("/mosque/api/getAll/**").permitAll()
-                        .requestMatchers(
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/swagger-resources/**",
-                                "/api/auth/**"
-                        ).permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/swagger-resources/**", "/api/auth/**").permitAll()
+                        .requestMatchers("mosque/api/nearest").permitAll()
 
 
                         // Protected endpoints (Require authentication)
@@ -54,6 +49,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/mosques/create").hasAuthority("VERIFIED_USER")
                         .requestMatchers("/api/mosques/{id}/edit").hasAuthority("VERIFIED_USER")
                         .requestMatchers("/api/mosques/{id}/favorite").hasAuthority("VERIFIED_USER")
+                        .requestMatchers("api/users/updateRole").hasAuthority("VERIFIED_USER")
 
                         // Require authentication for all other endpoints
                         .anyRequest().authenticated()
@@ -85,16 +81,5 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
-//
-//    @Bean
-//    public CorsConfigurationSource corsConfigurationSource() {
-//        CorsConfiguration configuration = new CorsConfiguration();
-//        configuration.setAllowedOrigins(List.of("*")); // Allow all origins
-//        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-//        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-//
-//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-//        source.registerCorsConfiguration("/**", configuration);
-//        return source;
-//    }
+
 }
