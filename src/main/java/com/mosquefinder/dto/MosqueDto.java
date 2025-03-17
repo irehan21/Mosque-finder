@@ -1,11 +1,12 @@
 package com.mosquefinder.dto;
 
-import com.mosquefinder.model.Locations;
+
 import com.mosquefinder.model.Mosque;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -17,7 +18,7 @@ public class MosqueDto {
     private String id;
     private String name;
     private String description;
-    private Locations location;
+    private GeoJsonPoint location;
     private String contactNumber;
     private Map<String, String> prayerTimes;
     private String createdBy;
@@ -26,11 +27,12 @@ public class MosqueDto {
     private String updatedBy;
 
     public static MosqueDto fromEntity(Mosque mosque) {
+        System.out.println("Mosque Location: " + mosque.getLocation());
         return MosqueDto.builder()
                 .id(mosque.getId())
                 .name(mosque.getName())
                 .description(mosque.getDescription())
-                .location(mosque.getLocation())  // ✅ Ensuring Location is included
+                .location(mosque.getLocation())
                 .contactNumber(mosque.getContactNumber())
                 .prayerTimes(mosque.getPrayerTimes())
                 .createdBy(mosque.getCreatedBy())

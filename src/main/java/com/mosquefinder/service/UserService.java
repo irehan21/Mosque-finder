@@ -1,12 +1,15 @@
 package com.mosquefinder.service;
 
 import com.mosquefinder.dto.LocationDto;
+import com.mosquefinder.dto.UserDto;
 import com.mosquefinder.exception.ResourceNotFoundException;
 import com.mosquefinder.model.User;
 import com.mosquefinder.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+import javax.management.relation.Role;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -22,7 +25,7 @@ public class UserService {
                 .email(email)
                 .password(encodedPassword)
                 .verified(false)
-                .roles(Set.of("USER"))
+                .roles("USER")
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -85,5 +88,17 @@ public class UserService {
 
     public User saveUser(User user) {
        return userRepository.save(user);
+    }
+
+    public void updateRole(Authentication authentication, UserDto userDto) {
+       String email = authentication.getName();
+       User user = findByEmail(email);
+       if (user == null) {
+           throw new RuntimeException("User not found");
+       }
+
+        user.setRoles(userDto.getRoles());
+        saveUser(user);
+
     }
 }

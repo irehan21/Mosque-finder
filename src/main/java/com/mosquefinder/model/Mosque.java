@@ -7,6 +7,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.index.GeoSpatialIndexed;
+import org.springframework.data.mongodb.core.index.GeoSpatialIndexType;
+import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -21,7 +24,9 @@ public class Mosque {
     private String id;
     private String name;
     private String description;
-    private Locations location;
+
+    @GeoSpatialIndexed(type = GeoSpatialIndexType.GEO_2DSPHERE)
+    private GeoJsonPoint location;
     private String contactNumber;
     private Map<String, String> prayerTimes;
     private String createdBy;
@@ -34,7 +39,7 @@ public class Mosque {
                 this.id,
                 this.name,
                 this.description,
-                this.location != null ? this.location.toEntity() : null,
+                this.location,
                 this.contactNumber,
                 this.prayerTimes,
                 this.createdBy,

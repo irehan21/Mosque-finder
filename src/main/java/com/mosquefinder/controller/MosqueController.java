@@ -1,8 +1,11 @@
 package com.mosquefinder.controller;
 
 import com.mosquefinder.dto.MosqueDto;
+import com.mosquefinder.dto.MosqueWithDistanceDto;
+import com.mosquefinder.model.Mosque;
 import com.mosquefinder.service.MosqueService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +17,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MosqueController {
     private final MosqueService mosqueService;
+    private final MongoTemplate mongoTemplate;
+
 
     @PostMapping("/create")
     public ResponseEntity<MosqueDto> createMosque(@RequestBody MosqueDto mosqueDto, Authentication authentication) {
@@ -41,6 +46,16 @@ public class MosqueController {
     public ResponseEntity<String> deleteMosque(@PathVariable String id, Authentication authentication) {
         mosqueService.deleteMosque(id,authentication);
         return ResponseEntity.ok("Mosque deleted successfully");
+    }
+
+
+    @GetMapping("/nearest")
+    public List<MosqueWithDistanceDto> getNearestMosques(
+            @RequestParam double latitude,
+            @RequestParam double longitude,
+            @RequestParam(defaultValue = "10") double maxDistance // Default 10km
+    ) {
+        return mosqueService.findMosquesNear(latitude, longitude, maxDistance);
     }
 
 }
