@@ -102,6 +102,12 @@
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>2.3.0</version>
 		</dependency>
+		<dependency>
+			<groupId>com.batoulapps.adhan</groupId>
+			<artifactId>adhan</artifactId>
+			<version>1.2.1</version>
+		</dependency>
+
 
 	</dependencies>
 

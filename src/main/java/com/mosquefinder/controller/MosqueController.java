@@ -2,7 +2,6 @@ package com.mosquefinder.controller;
 
 import com.mosquefinder.dto.MosqueDto;
 import com.mosquefinder.dto.MosqueWithDistanceDto;
-import com.mosquefinder.model.Mosque;
 import com.mosquefinder.service.MosqueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.mongodb.core.MongoTemplate;
