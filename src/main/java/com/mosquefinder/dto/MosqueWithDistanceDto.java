@@ -13,7 +13,7 @@ public class MosqueWithDistanceDto {
     private String description;
     private GeoJsonPoint location;
     private String contactNumber;
-    private Double distance; // Distance from user location
+    private Double distance;
 
     public MosqueWithDistanceDto(String id, String name, String description, GeoJsonPoint location, String contactNumber, Double distance) {
         this.id = id;
