@@ -10,12 +10,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PrayerTimesResponse {
-    private String fairTime;
+    private String fajr;
     private String sunrise;
-    private String dhuhartime;
+    private String dhuhar;
     private String asr;
     private String maghrib;
-    private String ishaTime;
+    private String isha;
 
 
 }
