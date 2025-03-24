@@ -69,7 +69,7 @@ public class UserController {
         ));
     }
 
-    @DeleteMapping("/mosques/{mosqueId}/favorite")
+    @DeleteMapping("/mosques/{mosqueId}")
     public ResponseEntity<?> removeFavoriteMosque(
             Authentication authentication,
             @PathVariable String mosqueId) {

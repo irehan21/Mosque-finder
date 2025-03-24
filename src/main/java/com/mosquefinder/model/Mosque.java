@@ -33,6 +33,7 @@ public class Mosque {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String updatedBy;
+    private double distance;
 
     public MosqueDto toDto() {
         return new MosqueDto(
@@ -45,7 +46,8 @@ public class Mosque {
                 this.createdBy,
                 this.createdAt,
                 this.updatedAt,
-                this.updatedBy
+                this.updatedBy,
+                this.distance
         );
     }
 

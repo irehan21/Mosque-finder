@@ -4,7 +4,6 @@ import com.batoulapps.adhan.*;
 import com.batoulapps.adhan.data.*;
 import com.mosquefinder.model.PrayerTimesResponse;
 import org.springframework.stereotype.Service;
-
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
@@ -33,7 +32,8 @@ public class PrayerTimeService {
         formatter.setTimeZone(TimeZone.getTimeZone("Asia/Kolkata"));
 
         // Create response object
-        PrayerTimesResponse response = new PrayerTimesResponse(
+
+        return new PrayerTimesResponse(
                 formatter.format(prayerTimes.fajr),
                 formatter.format(prayerTimes.sunrise),
                 formatter.format(prayerTimes.dhuhr),
@@ -41,7 +41,5 @@ public class PrayerTimeService {
                 formatter.format(prayerTimes.maghrib),
                 formatter.format(prayerTimes.isha)
         );
-
-        return response;
     }
 }

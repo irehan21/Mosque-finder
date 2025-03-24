@@ -49,7 +49,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/users/**").hasAuthority("VERIFIED_USER")
                         .requestMatchers("/api/mosques/create").hasAuthority("VERIFIED_USER")
                         .requestMatchers("/api/mosques/{id}/edit").hasAuthority("VERIFIED_USER")
-                        .requestMatchers("/api/mosques/{id}/favorite").hasAuthority("VERIFIED_USER")
+                        .requestMatchers("/api/mosques/{id}").hasAuthority("VERIFIED_USER")
                         .requestMatchers("api/users/updateRole").hasAuthority("VERIFIED_USER")
 
                         // Require authentication for all other endpoints

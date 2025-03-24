@@ -25,6 +25,7 @@ public class MosqueDto {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String updatedBy;
+    private Double distance;
 
     public static MosqueDto fromEntity(Mosque mosque) {
         System.out.println("Mosque Location: " + mosque.getLocation());
@@ -38,6 +39,7 @@ public class MosqueDto {
                 .createdBy(mosque.getCreatedBy())
                 .createdAt(mosque.getCreatedAt())
                 .updatedAt(mosque.getUpdatedAt())
+                .distance(mosque.toDto().getDistance())
                 .build();
     }
 
