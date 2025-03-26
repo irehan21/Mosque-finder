@@ -13,10 +13,13 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.aggregation.GeoNearOperation;
 import org.springframework.data.mongodb.core.query.NearQuery;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -125,6 +128,16 @@ public class MosqueService {
         // Execute aggregation and map results
         AggregationResults<MosqueWithDistanceDto> results = mongoTemplate.aggregate(aggregation, "mosques", MosqueWithDistanceDto.class);
         return results.getMappedResults();
+    }
+
+    public MosqueDto getCreatedBy(Authentication authentication) {
+        String createdBy = authentication.getName();
+
+        return mosqueRepository.findByCreatedBy(createdBy)
+                .map(mosque -> MosqueDto.fromEntity((Mosque) mosque))
+                .orElseThrow(() ->
+                        new ResponseStatusException(HttpStatus.NOT_FOUND, "Mosque not found for user: " + createdBy)
+                );
     }
 }
 

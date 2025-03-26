@@ -1,6 +1,7 @@
 package com.mosquefinder.controller;
 
 import com.mosquefinder.dto.LocationDto;
+import com.mosquefinder.dto.MosqueDto;
 import com.mosquefinder.dto.UserDto;
 import com.mosquefinder.model.User;
 import com.mosquefinder.service.UserService;
@@ -84,9 +85,13 @@ public class UserController {
     }
 
     @PostMapping("/updateRole")
-    public ResponseEntity<?> updateRole(@RequestBody UserDto userDto,  Authentication authentication){
-        userService.updateRole(authentication, userDto);
-        return ResponseEntity.ok("Role updated successfully");
-
+    public ResponseEntity<?> updateRole(@RequestBody UserDto userDto, Authentication authentication) {
+        // Add error handling and return more detailed response
+        try {
+            userService.updateRole(authentication, userDto);
+            return ResponseEntity.ok(userDto); // Return the updated user/role data
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

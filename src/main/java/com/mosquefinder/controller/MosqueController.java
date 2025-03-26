@@ -2,6 +2,7 @@ package com.mosquefinder.controller;
 
 import com.mosquefinder.dto.MosqueDto;
 import com.mosquefinder.dto.MosqueWithDistanceDto;
+import com.mosquefinder.exception.ResourceNotFoundException;
 import com.mosquefinder.service.MosqueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -22,7 +23,11 @@ public class MosqueController {
     @PostMapping("/create")
     public ResponseEntity<MosqueDto> createMosque(@RequestBody MosqueDto mosqueDto, Authentication authentication) {
         String createdBy = authentication.getName(); // Fetch user from JWT
-        return ResponseEntity.ok(mosqueService.createMosque(mosqueDto, createdBy).toDto());
+        MosqueDto createdMosque = mosqueService.createMosque(mosqueDto, createdBy).toDto();
+
+        return ResponseEntity.ok()
+                .header("Success-Message", "Mosque created successfully")
+                .body(createdMosque);
     }
 
     @PostMapping("/update/{id}")
@@ -36,9 +41,28 @@ public class MosqueController {
         return ResponseEntity.ok(mosqueService.getAllMosques());
     }
 
+//    @GetMapping("getById/{id}")
+//    public ResponseEntity<MosqueDto> getMosqueById(@PathVariable String id) {
+//        return ResponseEntity.ok(mosqueService.getMosqueById(id));
+//    }
+
     @GetMapping("getById/{id}")
     public ResponseEntity<MosqueDto> getMosqueById(@PathVariable String id) {
-        return ResponseEntity.ok(mosqueService.getMosqueById(id));
+        try {
+            MosqueDto mosqueDto = mosqueService.getMosqueById(id);
+
+            return ResponseEntity.ok(mosqueDto);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/getCreatedBy")
+    public ResponseEntity<MosqueDto> getCreatedByMosque( Authentication authentication) {
+       MosqueDto mosqueDto= mosqueService.getCreatedBy(authentication);
+        return ResponseEntity.ok(mosqueDto);
     }
 
     @DeleteMapping("/delete/{id}")

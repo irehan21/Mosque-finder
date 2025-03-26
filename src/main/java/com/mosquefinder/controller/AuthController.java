@@ -1,15 +1,15 @@
 package com.mosquefinder.controller;
 
 import com.mosquefinder.dto.*;
+import com.mosquefinder.exception.CustomException;
 import com.mosquefinder.exception.TokenRefreshException;
 import com.mosquefinder.service.AuthService;
 import com.mosquefinder.service.OtpService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -26,7 +26,7 @@ public class AuthController {
 
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         authService.register(request);
         return ResponseEntity.ok(Map.of(
                 "message", "Registration successful. Please check your email for verification code."
@@ -60,22 +60,13 @@ public class AuthController {
 
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        // Authenticate user
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
-        );
-
-        // Set security context
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        // Get user details from authentication
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-
-        // Delegate to service for business logic
-        LoginResponse loginResponse = authService.handleSuccessfulLogin(userDetails);
-
-        return ResponseEntity.ok(loginResponse);
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        try {
+            LoginResponse response = authService.login(request.getEmail(), request.getPassword());
+            return ResponseEntity.ok(response);
+        } catch (CustomException e) {
+            return ResponseEntity.status(e.getStatus()).body(Map.of("error", e.getMessage()));
+        }
     }
 
 

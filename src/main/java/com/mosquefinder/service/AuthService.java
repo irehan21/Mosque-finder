@@ -1,11 +1,16 @@
 package com.mosquefinder.service;
 
 import com.mosquefinder.dto.*;
+import com.mosquefinder.exception.CustomException;
 import com.mosquefinder.exception.TokenRefreshException;
 import com.mosquefinder.model.RefreshToken;
 import com.mosquefinder.model.User;
 import com.mosquefinder.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -25,12 +30,24 @@ public class AuthService {
     private final OtpService otpService;
     private final UserRepository userRepository;
     private final RefreshTokenService refreshTokenService;
+    private final AuthenticationManager authenticationManager;
 
     public void register(RegisterRequest request) {
         // Check if user already exists
         if (userService.existsByEmail(request.getEmail())) {
             throw new IllegalStateException("Email already registered");
         }
+        // Prevent empty values from being stored
+        if (request.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Name cannot be empty");
+        }
+        if (!request.getEmail().contains("@")) {
+            throw new IllegalArgumentException("Invalid email format");
+        }
+        if (request.getPassword().trim().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be empty");
+        }
+
 
         // Create new user
         String encodedPassword = passwordEncoder.encode(request.getPassword());
@@ -48,6 +65,24 @@ public class AuthService {
         }
 
         return isValid;
+    }
+
+    public LoginResponse login(String email, String password) {
+        // 1️⃣ Validate user credentials
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException("Invalid email or password", HttpStatus.UNAUTHORIZED));
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new CustomException("Invalid email or password", HttpStatus.UNAUTHORIZED);
+        }
+
+        // 2️⃣ Authenticate user with Spring Security
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(email, password)
+        );
+
+        // 3️⃣ Call handleSuccessfulLogin() to generate JWT & response
+        return handleSuccessfulLogin((UserDetails) authentication.getPrincipal());
     }
 
     public LoginResponse handleSuccessfulLogin(UserDetails userDetails) {
