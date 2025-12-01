@@ -28,7 +28,6 @@ public class MosqueDto {
     private Double distance;
 
     public static MosqueDto fromEntity(Mosque mosque) {
-        System.out.println("Mosque Location: " + mosque.getLocation());
         return MosqueDto.builder()
                 .id(mosque.getId())
                 .name(mosque.getName())

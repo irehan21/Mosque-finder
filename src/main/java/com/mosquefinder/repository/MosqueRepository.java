@@ -9,7 +9,7 @@ import org.springframework.data.repository.Repository;
 import java.util.List;
 import java.util.Optional;
 
-public interface MosqueRepository extends MongoRepository<Mosque, String> {
+public interface    MosqueRepository extends MongoRepository<Mosque, String> {
     List<Mosque> findByLocationNear(Point location, Distance distance);
 
     Optional<Object> findByCreatedBy(String createdBy);

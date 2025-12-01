@@ -26,14 +26,15 @@ public class MosqueController {
         MosqueDto createdMosque = mosqueService.createMosque(mosqueDto, createdBy).toDto();
 
         return ResponseEntity.ok()
-                .header("Success-Message", "Mosque created successfully")
+                .header("success", "Mosque created successfully")
                 .body(createdMosque);
     }
 
     @PostMapping("/update/{id}")
     public ResponseEntity<MosqueDto> updateMosque(@PathVariable String id, @RequestBody  MosqueDto mosqueDto, Authentication authentication) {
         String updatedBy = authentication.getName();
-        return ResponseEntity.ok(mosqueService.updateMosque(id,mosqueDto,authentication,updatedBy).toDto());
+        mosqueService.updateMosque(id,mosqueDto,authentication,updatedBy).toDto();
+        return ResponseEntity.ok().header("success", "Mosque Update Successful").body(mosqueDto);
     }
 
     @GetMapping("/getAll")
@@ -76,7 +77,7 @@ public class MosqueController {
     public List<MosqueWithDistanceDto> getNearestMosques(
             @RequestParam double latitude,
             @RequestParam double longitude,
-            @RequestParam(defaultValue = "10") double maxDistance // Default 10km
+            @RequestParam(defaultValue = "2000") double maxDistance
     ) {
         return mosqueService.findMosquesNear(latitude, longitude, maxDistance);
     }

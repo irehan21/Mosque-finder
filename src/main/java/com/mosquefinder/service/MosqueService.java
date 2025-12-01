@@ -39,7 +39,7 @@ public class MosqueService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         // Check if the user has ADMIN role
-        boolean isAdmin = authentication.getAuthorities().contains(new SimpleGrantedAuthority("ADMIN"));
+        boolean isAdmin = authentication.getAuthorities().contains(new SimpleGrantedAuthority("MOSQUE_ADMIN"));
 
         if (!isAdmin) {
             throw new RuntimeException("Unauthorized! Only ADMIN can create or edit mosques.");
@@ -62,7 +62,7 @@ public class MosqueService {
     }
 
     public Mosque updateMosque(String id, MosqueDto mosqueDto,  Authentication authentication , String updatedBy) {
-        boolean isAdmin = authentication.getAuthorities().contains(new SimpleGrantedAuthority("ADMIN"));
+        boolean isAdmin = authentication.getAuthorities().contains(new SimpleGrantedAuthority("MOSQUE_ADMIN"));
 
         if (!isAdmin) {
             throw new RuntimeException("Unauthorized! Only ADMIN can update mosques.");
@@ -92,7 +92,7 @@ public class MosqueService {
 
 
     public void deleteMosque(String mosqueId, Authentication authentication) {
-        boolean isAdmin = authentication.getAuthorities().contains(new SimpleGrantedAuthority("ADMIN"));
+        boolean isAdmin = authentication.getAuthorities().contains(new SimpleGrantedAuthority("MOSQUE_ADMIN"));
 
         if (!isAdmin) {
             throw new RuntimeException("Unauthorized! Only ADMIN can delete mosques.");
@@ -120,7 +120,7 @@ public class MosqueService {
         // Build aggregation pipeline
         Aggregation aggregation = Aggregation.newAggregation(
                 geoNearOperation,
-                Aggregation.project("id", "name", "description", "contactNumber", "prayerTimes")
+                Aggregation.project("id", "name", "description","location", "contactNumber", "prayerTimes")
                         .and("distance").as("distance"),
                 Aggregation.sort(org.springframework.data.domain.Sort.Direction.ASC, "distance") // Sort nearest first
         );

@@ -16,25 +16,12 @@ import java.util.Map;
 @NoArgsConstructor
 
 public class MosqueWithDistanceDto {
-//    private String id;
-//    private String name;
-//    private String description;
-////    private GeoJsonPoint location;
-//    private String contactNumber;
-//    private Double distance;
-//
-//    public MosqueWithDistanceDto(String id, String name, String description, GeoJsonPoint location, String contactNumber, Double distance) {
-//        this.id = id;
-//        this.name = name;
-//        this.description = description;
-////        this.location = location;
-//        this.contactNumber = contactNumber;
-//        this.distance = distance;
-//    }
+
     private String id;
     private String name;
     private String description;
     private String contactNumber;
+    private GeoJsonPoint location;
     private Map<String, String> prayerTimes;
     private Double distance;
 
@@ -45,6 +32,7 @@ public class MosqueWithDistanceDto {
                 .name(mosque.getName())
                 .description(mosque.getDescription())
                 .contactNumber(mosque.getContactNumber())
+                .location(mosque.getLocation())
                 .prayerTimes(mosque.getPrayerTimes())
                 .distance(mosque.toDto().getDistance())
                 .build();
