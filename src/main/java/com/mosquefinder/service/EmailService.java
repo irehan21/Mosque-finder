@@ -3,6 +3,7 @@ package com.mosquefinder.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -14,19 +15,18 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
-    public void sendOtpEmail(String to, String otp) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(to);
-        message.setSubject("Your MosqueFinder Account Verification Code");
-        message.setText("Dear user,\n\nYour verification code is: " + otp +
-                "\n\nThis code will expire in 5 minutes.\n\nRegards,\nMosqueFinder Team");
-
+    public void sendOtpEmail(String email, String otp) {
         try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(email);
+            message.setSubject("Your OTP Code");
+            message.setText("Your OTP is: " + otp);
+
             mailSender.send(message);
-            log.info("OTP email sent successfully to: {}", to);
-        } catch (Exception e) {
-            log.error("Failed to send OTP email to: {}", to, e);
-            throw new RuntimeException("Failed to send email", e);
+
+        } catch (MailException e) {
+            log.error("Failed to send email to: {}", email, e);
+            throw e;  // Throw so OtpService can catch it
         }
     }
 }
