@@ -40,6 +40,9 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/swagger-resources/**", "/api/auth/**").permitAll()
                         .requestMatchers("/mosque/api/nearest").permitAll()
                         .requestMatchers("/api/prayer-times").permitAll()
+                        .requestMatchers("/api/users/profile/**").permitAll()
+                        
+
 
 
                         // Protected endpoints (Require authentication)
