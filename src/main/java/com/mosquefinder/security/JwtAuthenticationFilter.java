@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -30,35 +31,57 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
+
         final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String userEmail;
+
+        // CRITICAL: Clear context FIRST
+        SecurityContextHolder.clearContext();
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        jwt = authHeader.substring(7);
-        userEmail = jwtService.extractUsername(jwt);
+        final String jwt = authHeader.substring(7);
 
-        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+        try {
+            // Extract email ONCE and store in variable
+            final String userEmail = jwtService.extractUsername(jwt);
 
+            if (userEmail != null) {
+                // Load user ONCE
+                UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
 
-            if (jwtService.isTokenValid(jwt, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                );
+                // Verify email matches
+                if (!userEmail.equals(userDetails.getUsername())) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
 
-                authToken.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
+                if (jwtService.isTokenValid(jwt, userDetails)) {
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
 
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    authToken.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
+
+                    // Set authentication in a thread-safe manner
+                    SecurityContext context = SecurityContextHolder.createEmptyContext();
+                    context.setAuthentication(authToken);
+                    SecurityContextHolder.setContext(context);
+
+                }
             }
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+
         }
 
         filterChain.doFilter(request, response);

@@ -139,6 +139,8 @@ public class MosqueService {
                         new ResponseStatusException(HttpStatus.NOT_FOUND, "Mosque not found for user: " + createdBy)
                 );
     }
+
+
 }
 
 

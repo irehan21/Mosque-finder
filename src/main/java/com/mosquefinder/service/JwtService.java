@@ -88,6 +88,7 @@
 package com.mosquefinder.service;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -101,6 +102,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+
+import static java.lang.Math.log;
 
 @Service
 public class JwtService {
@@ -144,9 +147,28 @@ public class JwtService {
         return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
     }
 
-    private boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
+
+
+//    private boolean isTokenExpired(String token) {
+//        return extractExpiration(token).before(new Date());
+//    }
+
+    public boolean isTokenExpired(String token) {
+        try {
+            Date expiration = extractExpiration(token);
+            boolean expired = expiration.before(new Date());
+
+            if (expired) {
+                 System.out.print("Token expired at: {}");
+            }
+
+            return expired;
+        } catch (ExpiredJwtException e) {
+            System.out.println("Token already expired: {}");
+            return true;
+        }
     }
+
 
     private Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);

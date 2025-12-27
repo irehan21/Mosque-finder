@@ -64,6 +64,7 @@ public class MosqueController {
     public ResponseEntity<MosqueDto> getCreatedByMosque( Authentication authentication) {
        MosqueDto mosqueDto= mosqueService.getCreatedBy(authentication);
         return ResponseEntity.ok(mosqueDto);
+
     }
 
     @DeleteMapping("/delete/{id}")

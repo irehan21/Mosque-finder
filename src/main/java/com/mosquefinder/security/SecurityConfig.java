@@ -41,6 +41,8 @@ public class SecurityConfig {
                         .requestMatchers("/mosque/api/nearest").permitAll()
                         .requestMatchers("/api/prayer-times").permitAll()
                         .requestMatchers("/api/users/profile/**").permitAll()
+                        .requestMatchers("/api/auth/forgot-password").permitAll()
+                        .requestMatchers("/api/auth//reset-password").permitAll()
                         
 
 

@@ -1,13 +1,16 @@
 package com.mosquefinder.service;
 
+import com.mosquefinder.model.Otp;
+import com.mosquefinder.model.OtpType;
 import com.mosquefinder.model.User;
+import com.mosquefinder.repository.OtpRepository;
 import com.mosquefinder.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -15,68 +18,85 @@ import java.util.concurrent.ConcurrentHashMap;
 public class OtpService {
     private final EmailService emailService;
     private final UserRepository userRepository;
-    private static final long OTP_VALID_DURATION = 5 * 60 * 1000; // 5 minutes
-    private final ConcurrentHashMap<String, String> otpCache = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Long> otpTimestamps = new ConcurrentHashMap<>();
-
+    private final OtpRepository otpRepository;
 
     public boolean generateAndSendOtp(String email) {
-        try {
-            User user = userRepository.findByEmail(email).orElse(null);
 
-            if (user == null) {
-                log.warn("User with email {} not found!", email);
-                return false;
-            }
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-            String otp = generateOtp();
-            otpCache.put(email, otp);
-            otpTimestamps.put(email, System.currentTimeMillis());
-
-            log.info("Generated OTP for email {}: {}", email, otp);
-
-            // Try to send email - but don't fail if it times out
-            try {
-                emailService.sendOtpEmail(email, otp);
-                log.info("✅ OTP email sent successfully to: {}", email);
-            } catch (Exception emailException) {
-                log.error("❌ Failed to send OTP email to: {} - but OTP is stored", email, emailException);
-                // OTP is still generated and stored, just email failed
-            }
-
-            return true;  // OTP generated successfully (email may or may not have been sent)
-
-        } catch (Exception e) {
-            log.error("❌ Error in generateAndSendOtp for email: {}", email, e);
+        if (!canSendOtp(email)) {
             return false;
         }
-    }
 
+        String otpCode = generateOtp();
 
-    public boolean verifyOtp(String email, String otp) {
-        String storedOtp = otpCache.get(email);
-        Long timestamp = otpTimestamps.get(email);
+        otpRepository.deleteByEmail(email);
 
-        if (storedOtp != null && storedOtp.equals(otp)) {
-            long currentTime = System.currentTimeMillis();
-            if (timestamp != null && (currentTime - timestamp) <= OTP_VALID_DURATION) {
-                otpCache.remove(email);
-                otpTimestamps.remove(email);
-                verifyUser(email);
-                return true;
-            } else {
-                otpCache.remove(email);
-                otpTimestamps.remove(email);
-            }
+        Otp otp = Otp.builder()
+                .email(email)
+                .otp(otpCode)
+                .createdAt(LocalDateTime.now())
+                .expiryTime(LocalDateTime.now().plusMinutes(10))
+                .build();
+
+        otpRepository.save(otp);
+
+        if (!user.isVerified()) {
+            emailService.sendOtpEmail(email, otpCode);
+        } else {
+            emailService.sendPasswordResetOtp(email, otpCode);
         }
-        return false;
+
+        return true;
     }
+
+    public boolean verifyOtp(String email, String otpCode) {
+
+        Otp otp = otpRepository.findByEmailAndOtp(email, otpCode)
+                .orElse(null);
+
+        if (otp == null) return false;
+
+        if (otp.getExpiryTime().isBefore(LocalDateTime.now())) {
+            otpRepository.delete(otp);
+            return false;
+        }
+
+        otpRepository.delete(otp);
+
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user != null && !user.isVerified()) {
+            user.setVerified(true);
+            userRepository.save(user);
+        }
+
+        return true;
+    }
+
+
+    public boolean canSendOtp(String email) {
+        LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
+        long count = otpRepository.countByEmailAndCreatedAtAfter(email, oneHourAgo);
+        return count < 3; // Max 3 OTPs per hour
+    }
+
+
+    public void deleteOtp(String email) {
+        try {
+            otpRepository.deleteByEmail(email);
+        } catch (Exception e) {
+            log.error("❌ Error deleting OTP for email: {}", email, e);
+        }
+    }
+
 
     private void verifyUser(String email) {
         User user = userRepository.findByEmail(email).orElse(null);
         if (user != null) {
             user.setVerified(true);
             userRepository.save(user);
+            log.info("✅ User verified: {}", email);
         }
     }
 
@@ -85,5 +105,4 @@ public class OtpService {
         int otp = 100000 + random.nextInt(900000);
         return String.valueOf(otp);
     }
-
 }

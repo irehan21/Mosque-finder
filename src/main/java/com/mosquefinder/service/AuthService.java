@@ -3,10 +3,12 @@ package com.mosquefinder.service;
 import com.mosquefinder.dto.*;
 import com.mosquefinder.exception.CustomException;
 import com.mosquefinder.exception.TokenRefreshException;
+import com.mosquefinder.model.OtpType;
 import com.mosquefinder.model.RefreshToken;
 import com.mosquefinder.model.User;
 import com.mosquefinder.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -37,6 +40,7 @@ public class AuthService {
         if (userService.existsByEmail(request.getEmail())) {
             throw new IllegalStateException("Email already registered");
         }
+
         // Prevent empty values from being stored
         if (request.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("Name cannot be empty");
@@ -47,7 +51,6 @@ public class AuthService {
         if (request.getPassword().trim().isEmpty()) {
             throw new IllegalArgumentException("Password cannot be empty");
         }
-
 
         // Create new user
         String encodedPassword = passwordEncoder.encode(request.getPassword());
@@ -76,12 +79,23 @@ public class AuthService {
             throw new CustomException("Invalid email or password", HttpStatus.UNAUTHORIZED);
         }
 
-        // 2️⃣ Authenticate user with Spring Security
+        // 2️⃣ ✅ CHECK: User verified hai ya nahi
+        if (!user.isVerified()) {
+            throw new CustomException(
+                    "Please verify your email first. Check your inbox or request a new OTP.",
+                    HttpStatus.FORBIDDEN
+            );
+        }
+
+        // 3️⃣ Authenticate user with Spring Security
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(email, password)
         );
 
-        // 3️⃣ Call handleSuccessfulLogin() to generate JWT & response
+        // 4️⃣ ✅ SINGLE DEVICE LOGIN: Delete old refresh tokens
+        refreshTokenService.deleteByUserId(user.getId());
+
+        // 5️⃣ Call handleSuccessfulLogin() to generate JWT & response
         return handleSuccessfulLogin((UserDetails) authentication.getPrincipal());
     }
 
@@ -147,5 +161,56 @@ public class AuthService {
                 .orElseThrow(() -> new TokenRefreshException("Refresh token is not valid!"));
     }
 
+    // ✅ NEW: Forgot Password
+    public void forgotPassword(String email) {
 
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
+
+        if (!user.isVerified()) {
+            log.info("verify emial first");
+            throw new CustomException(
+                    "Please verify your email first before resetting password",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        // Rate limit check
+        if (!otpService.canSendOtp(email)) {
+            throw new CustomException(
+                    "Too many requests. Please try again after 1 hour.",
+                    HttpStatus.TOO_MANY_REQUESTS
+            );
+        }
+
+
+        // Generate and send OTP
+        otpService.generateAndSendOtp(email);
+    }
+
+    // ✅ NEW: Reset Password
+    public void resetPassword(String email, String otp, String newPassword) {
+        // Verify OTP
+        boolean isValid = otpService.verifyOtp(email, otp);
+
+        if (!isValid) {
+            throw new CustomException("Invalid or expired OTP", HttpStatus.BAD_REQUEST);
+        }
+
+        // Find user
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
+
+        // Validate new password
+        if (newPassword.trim().isEmpty() || newPassword.length() < 6) {
+            throw new CustomException("Password must be at least 6 characters", HttpStatus.BAD_REQUEST);
+        }
+
+        // Update password
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        // ✅ LOGOUT FROM ALL DEVICES: Delete all refresh tokens
+        refreshTokenService.deleteByUserId(user.getId());
+    }
 }
